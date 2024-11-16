@@ -16,6 +16,9 @@
  *  1240 bits
  ******************************************************************************/
 
+import java.util.LinkedList;
+import java.util.Queue;
+
 /**
  *  The {@code BitmapCompressor} class provides static methods for compressing
  *  and expanding a binary bitmap input.
@@ -38,27 +41,31 @@ public class BitmapCompressor {
      */
     public static void compress() {
 
-        // Read in the binary values as a String
-        String sequence = "";
+        // Queue to hold binary values
+        Queue<Boolean> sequence = new LinkedList<>();
+        // Integer to hold length of sequence
+        int seqLength = 0;
+        // Read in the binary values one at a time into a Queue
         while (!BinaryStdIn.isEmpty()) {
-            sequence = sequence + getBitChar(BinaryStdIn.readBoolean());
+            sequence.add(BinaryStdIn.readBoolean());
+            // Increment seqLength by 1
+            seqLength++;
         }
 
         // Write the length of the sequence with the first BITS_PER_LENGTH bits in the binary file
-        int strLength = sequence.length();
-        BinaryStdOut.write(strLength, BIT_HEADER_LENGTH);
+        BinaryStdOut.write(seqLength, BIT_HEADER_LENGTH);
 
         // Boolean to hold the type of bit of the current streak
-        boolean currentBitType = getBitBool(sequence.charAt(0));
+        boolean currentBitType = sequence.remove();
         // Boolean to hold the current bit being compared to currentBitType
         boolean currentBit;
         // Length of the current run of bits of the same type
         int currentRun = 1;
 
         // Go through the sequence of bits
-        for (int i = 1; i < strLength; i++) {
+        while (!sequence.isEmpty()) {
             // Get the next bit in the sequence
-            currentBit = getBitBool(sequence.charAt(i));
+            currentBit = sequence.remove();
             // If the current bit is of the same type as the current run, increment the run length by one
             if (currentBit == currentBitType) {
                 currentRun++;
@@ -123,16 +130,4 @@ public class BitmapCompressor {
         else throw new IllegalArgumentException("Illegal command line argument");
     }
 
-    // Returns the bit value (in boolean form) of the inputted char
-    public static boolean getBitBool(char c) {
-        return c != '0';
-    }
-
-    // Returns the bit value (in char form) of the inputted boolean
-    public static char getBitChar(boolean b) {
-        if (!b) {
-            return '0';
-        }
-        return '1';
-    }
 }
