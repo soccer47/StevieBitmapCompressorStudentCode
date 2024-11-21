@@ -71,10 +71,12 @@ public class BitmapCompressor {
             }
             // Increment currentRun by 1
             currentRun++;
-            // If the current run is longer than 255, write out the code for the first 256, followed by 8 0s
+            // If the current run is longer than 255, write out the code for the first 255 bits
             if (currentRun == 256) {
                 BinaryStdOut.write(255, BITS_PER_RUN_LENGTH);
+                // Write out the code for 8 bits of the other type
                 BinaryStdOut.write(0, BITS_PER_RUN_LENGTH);
+                // Reset the length of currentRun back to 1
                 currentRun = 1;
             }
         }
