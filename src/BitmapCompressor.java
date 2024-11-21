@@ -31,9 +31,7 @@ import java.util.Queue;
 public class BitmapCompressor {
 
     // Number of bits to represent the length of a run of bits of same type
-    public static final int BITS_PER_RUN_LENGTH = 11;
-    // Number of bits to represent the length of the binary file
-    public static final int BIT_HEADER_LENGTH = 13;
+    public static final int BITS_PER_RUN_LENGTH = 8;
 
     /**
      * Reads a sequence of bits from standard input, compresses them,
@@ -42,43 +40,41 @@ public class BitmapCompressor {
     public static void compress() {
         // Queue to hold binary values
         Queue<Boolean> sequence = new LinkedList<>();
-        // Integer to hold length of sequence
-        int seqLength = 0;
+
         // Read in the binary values one at a time into a Queue
         while (!BinaryStdIn.isEmpty()) {
             sequence.add(BinaryStdIn.readBoolean());
-            // Increment seqLength by 1
-            seqLength++;
         }
 
-        // Write the length of the sequence with the first BITS_PER_LENGTH bits in the binary file
-        BinaryStdOut.write(seqLength, BIT_HEADER_LENGTH);
-
         // Boolean to hold the type of bit of the current streak
-        boolean currentBitType = sequence.remove();
-        // Write out this bit type as the first type of bit in the sequence
-        BinaryStdOut.write(currentBitType);
+        // Start currentBitType at 0/false
+        boolean currentBitType = false;
 
         // Boolean to hold the current bit being compared to currentBitType
         boolean currentBit;
         // Length of the current run of bits of the same type
-        int currentRun = 1;
+        int currentRun = 0;
 
         // Go through the sequence of bits
         while (!sequence.isEmpty()) {
             // Get the next bit in the sequence
             currentBit = sequence.remove();
             // If the current bit is of the same type as the current run, increment the run length by one
-            if (currentBit == currentBitType) {
-                currentRun++;
-            }
             // Otherwise, write out a sequence of bits representing the run
-            else {
+            if (currentBit != currentBitType){
                 // Next write the length of the run
                 BinaryStdOut.write(currentRun, BITS_PER_RUN_LENGTH);
                 // Update the type of the current bit
                 currentBitType = currentBit;
-                // Reset the length of the current run back to 1
+                // Reset the length of the current run
+                currentRun = 0;
+            }
+            // Increment currentRun by 1
+            currentRun++;
+            // If the current run is longer than 255, write out the code for the first 256, followed by 8 0s
+            if (currentRun == 256) {
+                BinaryStdOut.write(255, BITS_PER_RUN_LENGTH);
+                BinaryStdOut.write(0, BITS_PER_RUN_LENGTH);
                 currentRun = 1;
             }
         }
@@ -93,15 +89,12 @@ public class BitmapCompressor {
      * and writes the results to standard output.
      */
     public static void expand() {
-        // Find how many characters are in the sequence
-        int sequenceLength = BinaryStdIn.readInt(BIT_HEADER_LENGTH);
-        // Find out the first type of bit in the sequence
-        boolean bit = BinaryStdIn.readBoolean();
-        // Integer to keep track of how many bits have been written out
-        int bitsWritten = 0;
+        // Boolean to hold the type of bit of the current run
+        // The type of bit of the first run is 0
+        boolean bit = false;
 
-        // Write out the bits until the same number of bits as were in the original file have been written
-        while (bitsWritten < sequenceLength) {
+        // Write out the bits until all the bits have been taken in from the compressed file
+        while (!BinaryStdIn.isEmpty()) {
             // Get the length of the current run
             int runLength = BinaryStdIn.readInt(BITS_PER_RUN_LENGTH);
 
@@ -109,8 +102,6 @@ public class BitmapCompressor {
             for (int j = 0; j < runLength; j++) {
                 BinaryStdOut.write(bit);
             }
-            // Increment the number of bits written by the length of the run
-            bitsWritten += runLength;
             // Switch the type of bit
             bit = !bit;
         }
